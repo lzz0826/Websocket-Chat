@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="nivo-lightbox-notouch" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>聊天室</title>
+    <link rel="stylesheet" th:href="@{/static/css/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/static/css/slicknav.css}">
+    <link rel="stylesheet" th:href="@{/static/css/nivo-lightbox.css}">
+    <link rel="stylesheet" th:href="@{/static/css/animate.css}">
+    <link rel="stylesheet" th:href="@{/static/css/main.css}">
+    <link rel="stylesheet" th:href="@{/static/css/responsive.css}">
+</head>
+
+<body>
+    <header th:replace="header.html"></header>
+    <div id="chat" class="section-padding">
+        <div class="container">
+            <div class="row">
+                <div class="chat-container wow fadeInDown animated" data-wow-delay="0.3s" style="visibility: visible;-webkit-animation-delay: 0.3s; -moz-animation-delay: 0.3s; animation-delay: 0.3s; ">
+                    <div id="chat-data" style="width:100%; height:100%;overflow: auto;">
+
+                    </div>
+                </div>
+            </div>
+            <div style="width: 100%;">
+                <div style="width: 80%;float: left;">
+                    <div class="message-container" id="chat-editor">
+                        <input type="text" id="chat-text" style="width: 100%;height: 42px;">
+                    </div>
+                </div>
+                <div style="width: 20%;float: right;">
+                    <div style="text-align: right">
+                        <button class="btn btn-info" onclick="sendChat()">發送</button>
+                    </div>
+                </div>
+                <div>
+                    <h2>在線人員人名單</h2>
+                    <form method="get">
+                        <span class="glyphicon glyphicon-hand-right">
+                        <font face="微軟正黑體" size="3"><b>&nbsp;請選擇 ：</b>
+                        <select id="cnameList" style="cursor:pointer;width:180px" name="Cname">
+
+                        <!-- <optgroup selected="false" label="CustomerName">
+                        <option >123</option> -->
+                        </select>
+                        </font>
+                        </span>
+                    </form>
+                    <button id="cullUser">T除</button>
+                    <div style="width: 20%;float: right;">
+                        <div style="text-align: right">
+                            <button class="btn btn-info" onclick="sendChatOne()">私聊發送</button>
+                        </div>
+                    </div>
+                </div>
+
+
+            </div>
+        </div>
+    </div>
+    <div class="message-box-warp">
+        <div id="message-box" class="message-box">
+            <p id="message-box-text"></p>
+        </div>
+    </div>
+    <footer th:replace="footer.html"></footer>
+</body>
+<script type="text/javascript" th:src="@{/static/js/jquery-min.js}"></script>
+<script type="text/javascript" th:src="@{/static/js/bootstrap.min.js}"></script>
+<script type="text/javascript" th:src="@{/static/js/main.js}"></script>
+<script type="text/javascript" th:src="@{/static/js/jquery.mixitup.js}"></script>
+<script type="text/javascript" th:src="@{/static/js/jquery.counterup.min.js}"></script>
+<script type="text/javascript">
+    var onlineUserList;
+    var pirvateUser;
+    var pirvateUid;
+    var cullUser;
+    var cullAccount;
+    var socket;
+    $(function() {
+        $.ajax({
+            type: "GET",
+            url: '/api/websocket/onlineuser',
+            dataType: "json",
+            success: function(result) {
+                console.log(result);
+                console.log(typeof(result));
+                onlineUserList = result;
+                for (let i = 0; i < result.length; i++) {
+                    $("#cnameList").append(`
+                        <option value="${Object.values(result[i])[0]}">${Object.values(result[i])[0]}</option>                
+                `);
+                };
+                // document.getElementById('#cnameList').innerHTML = result;
+            },
+            error: function(result) {
+                alert("讀取失敗");
+            }
+        });
+    });
+
+    function cullCullUser(urlId) {
+        cullUser = $("#cnameList").val();
+        for (let i = 0; i < onlineUserList.length; i++) {
+            if (Object.values(onlineUserList[i])[0] == cullUser) {
+                cullAccount = Object.keys(onlineUserList[i])[0]
+                    //return Object.keys(cullUserList[i]);
+            };
+        };
+        // alert(cullAccount);
+        $.ajax({
+            type: "POST",
+            url: "/api/websocket/" + urlId,
+            data: {
+                "account": sessionStorage.getItem("account"),
+                "cullAccount": cullAccount
+            },
+            success: function(data) {
+                alert(data)
+
+            },
+            error: function(data) {
+                alert("失敗")
+            }
+        });
+    }
+    $(function() {
+        $("#cullUser").click(function() {
+            cullCullUser("cullOnlineuser");
+        });
+
+        $("#inviteUser").click(function() {
+            cullCullUser("inviteOnlineuser");
+        });
+    });
+    if (typeof(WebSocket) == "undefined") {
+        console.log("遺憾：您的瀏覽器不支持WebSocket");
+    } else {
+        console.log("恭喜：您的瀏覽器支持WebSocket");
+        //實現化WebSocket對象
+        //指定要連接的服务器地址与端口建立指定要連接的服務器地址与端口建立連接
+        //注意ws、wss使用不同的端口。我使用自签名的证书测试，
+        //无法使用wss，瀏覽器打开WebSocket时报错
+        //ws对应http、wss对应https。
+        url = "ws://" + window.location.host + "/chatOnline/websocket/" + sessionStorage.getItem("uid");
+        console.log(url);
+        socket = new WebSocket(url);
+        //指定要連接的服务器地址与端口建立連接打开事件
+        socket.onopen = function() {
+            heartCheck.start();
+            console.log("Socket 已打开");
+            // socket.send("消息发送测试()");
+        };
+        //收到消息事件
+        socket.onmessage = function(result) {
+            //後端 Obj 傳data定義
+            //心跳 啟動 接收後端data=connectOK   log connectOK
+            heartCheck.start();
+            if (result.data == "connectOK") {
+                console.log(result.data);
+            } else {
+                //否則 發文
+                console.log(result.data);
+                var map = eval("(" + result.data + ")");
+                for (var key in map) {
+                    console.log(map[key]);
+                }
+                $('#chat-data').append("<p>" + map["chat_username"] + map["chat_text"] + "</p>");
+                // result1 = (new Function("", "return " + result.data))();
+                // console.log(JSON.stringify(result1["chat_text"]));
+                // $('#chat-result').append("<p>" + JSON.stringify(result["chat_text"]) + "</p>");
+                //原生DOM
+                var divscll = document.getElementById('chat-data');
+                divscll.scrollTop = divscll.scrollHeight;
+            };
+        };
+        //連線關閉事件
+        socket.onclose = function() {
+            alert("你被T了");
+            window.location.pathname = '/logout';
+            console.log("Socket已关闭");
+        };
+        //發生錯誤事件
+        socket.onerror = function() {
+            reconnect(url);
+            alert("Socket发生了错误");
+        };
+        //窗口關閉，關閉連線
+        window.unload = function() {
+            reconnect(url);
+            socket.close();
+        };
+    }
+
+    $(document).keypress(function(e) {
+        // 回車事件
+        if (e.which === 13) {
+            sendChat();
+        }
+    });
+
+    var heartCheck = {
+        timeout: 3000, //每隔三秒傳送心跳
+        num: 3, //3次心跳均未響應重連
+        timeoutObj: null,
+        serverTimeoutObj: null,
+        start: function() {
+            var _this = this;
+            var _num = this.num;
+            this.timeoutObj && clearTimeout(this.timeoutObj);
+            this.serverTimeoutObj && clearTimeout(this.serverTimeoutObj);
+            this.timeoutObj = setTimeout(function() {
+                //這裡傳送一個心跳，後端收到後，返回一個心跳訊息，
+                //onmessage拿到返回的心跳就說明連線正常
+                socket.send("connectOK"); // 心跳包
+                _num--;
+                //計算答覆的超時次數
+                if (_num === 0) {
+                    socket.colse();
+                }
+            }, this.timeout)
+        }
+    }
+    var lockReconnect = false; //避免重複連線
+    function reconnect(url) {
+        if (lockReconnect) {
+            return;
+        };
+        lockReconnect = true;
+        //沒連線上會一直重連，設定延遲避免請求過多
+        tt && clearTimeout(tt);
+        tt = setTimeout(function() {
+            createWebSocket(url);
+            lockReconnect = false;
+        }, 4000);
+    }
+
+    //發送私訊
+    function sendChatOne() {
+        // document.getElementById("chat-data");
+        // debugger;
+        var chatText = $("#chat-text").val();
+        var account = sessionStorage.getItem('account');
+        var token = sessionStorage.getItem('token');
+        pirvateUser = $("#cnameList").val();
+        for (let i = 0; i < onlineUserList.length; i++) {
+            if (Object.values(onlineUserList[i])[0] == pirvateUser) {
+                pirvateUid = Object.keys(onlineUserList[i])[0]
+                    //return Object.keys(cullUserList[i]);
+            };
+        };
+        //alert(chatText);
+        $.ajax({
+            url: "/api/websocket/sendOne",
+            dataType: "JSON",
+            data: {
+                "chatText": chatText,
+                "token": token,
+                "account": account,
+                "pirvateUid": pirvateUid
+            },
+            contentType: "application/json; charset=utf-8",
+            success: function(data) {
+                if (data.code === "1") {
+                    //提交成功
+                    $("#message-box-text").html("(私人)" + data.msg)
+                    $("#message-box").css("color", "#d7f7ff");
+                    $("#message-box").css("background", "#1a95ff");
+                    $("#chat-text").val("");
+                    $("#chat-text").focus();
+                } else if (data.code === "0") {
+                    $("#message-box-text").html(data.msg)
+                    $("#message-box").css("color", "#a94442");
+                    $("#message-box").css("background", "#f2dede");
+                }
+                setTimeout(function() {
+                    $('#message-box').slideUp(300);
+                }, 1000);
+                if ($("#message-box").is(":hidden")) {
+                    $('#message-box').slideDown(300);
+                } else {
+                    $('#message-box').slideUp(300);
+                }
+            }
+        })
+    }
+
+
+    //發送群體
+    function sendChat() {
+        // document.getElementById("chat-data");
+        // debugger;
+        var chatText = $("#chat-text").val();
+        var account = sessionStorage.getItem('account');
+        var token = sessionStorage.getItem('token');
+        //alert(chatText);
+        $.ajax({
+            url: "/api/websocket/sendAll",
+            dataType: "JSON",
+            data: {
+                "chatText": chatText,
+                "token": token,
+                "account": account
+
+            },
+            contentType: "application/json; charset=utf-8",
+            success: function(data) {
+                if (data.code === "1") {
+                    //提交成功
+                    $("#message-box-text").html(data.msg)
+                    $("#message-box").css("color", "#d7f7ff");
+                    $("#message-box").css("background", "#1a95ff");
+                    $("#chat-text").val("");
+                    $("#chat-text").focus();
+                } else if (data.code === "0") {
+                    $("#message-box-text").html(data.msg)
+                    $("#message-box").css("color", "#a94442");
+                    $("#message-box").css("background", "#f2dede");
+                }
+                setTimeout(function() {
+                    $('#message-box').slideUp(300);
+                }, 1000);
+                if ($("#message-box").is(":hidden")) {
+                    $('#message-box').slideDown(300);
+                } else {
+                    $('#message-box').slideUp(300);
+                }
+            }
+        })
+    }
+</script>
+
+</html>

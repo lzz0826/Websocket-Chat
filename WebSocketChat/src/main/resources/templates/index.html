@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Spring Boot簡單聊天室</title>
+    <meta charset="utf-8" />
+    <link href="/webjars/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/main.css" rel="stylesheet">
+    <script src="/js/jquery.min.js"></script>
+    <script src="/webjars/sockjs-client/sockjs.min.js"></script>
+    <script src="/webjars/stomp-websocket/stomp.min.js"></script>
+    <script src="/js/chat.js"></script>
+</head>
+
+<body>
+
+    <div id="main-content" class="container">
+        <div class="row">
+            <div class="col-md-6">
+                <form class="form-inline">
+                    <div class="form-group">
+                        <label for="connect">WebSocket 連接:</label>
+                        <button id="connect" class="btn btn-default" type="submit">連接</button>
+                        <button id="disconnect" class="btn btn-default" type="submit" disabled="disabled">關閉連接
+                    </button>
+                    </div>
+                </form>
+            </div>
+            <div class="col-md-6">
+                <form class="form-inline">
+                    <label for="inputname">姓名或暱稱:</label>
+                    <input type="text" id="inputname" placeholder="請輸入姓名或暱稱">
+
+                    <button id="setname" type="submit">確認</button>
+                </form>
+            </div>
+
+
+            <div class="col-md-6">
+                <form class="form-inline">
+                    <div class="form-group">
+                        <label for="message">發送訊息</label>
+                        <input type="text" id="message" class="form-control" placeholder="請輸入訊息">
+                    </div>
+                    <button id="send" class="btn btn-default" type="submit">發送</button>
+                </form>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                <table id="conversation" class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>聊天室</th>
+                        </tr>
+                    </thead>
+                    <tbody id="chatRoom">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

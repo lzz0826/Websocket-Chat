@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="tw.tony.com.mapper.UserMapper">
+    <!--关于ResultMap 如果实体类与数据库的行相同则不用写，反之则需要写ResultMap-->
+    <sql id="table">chat_user</sql>
+    <sql id="role_table">role</sql>
+    <sql id="permission_table">permission</sql>
+
+
+
+    <select id="getAull" resultType="tw.tony.com.model.User">
+        SELECT
+        *
+        FROM
+        <include refid="table"/>
+        WHERE
+        uid = #{uid}
+    </select>
+
+
+
+    <select id="getSid" resultType="tw.tony.com.model.User">
+        SELECT
+        `sid`
+        FROM
+        <include refid="table"/>
+        WHERE
+        uid = #{uid}
+    </select>
+
+
+    <select id="getUsername" resultType="tw.tony.com.model.User">
+        SELECT
+        `username`
+        FROM
+        <include refid="table"/>
+        WHERE
+        uid = #{uid}
+    </select>
+
+
+
+
+    <select id="getUserBySid" resultType="tw.tony.com.model.User">
+        SELECT
+        *
+        FROM
+        <include refid="table"/>
+        WHERE
+        sid = #{sid}
+    </select>
+
+    
+    <select id="getUserByUid" resultType="tw.tony.com.model.User">
+        SELECT
+        `uid`
+        FROM
+        <include refid="table"/>
+        WHERE
+        sid = #{sid}
+    </select>
+
+    <insert id="userAdd" parameterType="tw.tony.com.model.User" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO
+        <include refid="table"/>
+        (uid,sid,username,password,sex,ip,browser,weight)
+        VALUES
+        (#{uid},#{sid},#{username},#{password},#{sex},
+        #{ip},#{browser},#{weight})
+    </insert>
+
+    <update id="userUpdate" parameterType="tw.tony.com.model.User">
+        UPDATE
+        <include refid="table"/>
+        <set>
+            <if test="sid!=null">sid = #{sid},</if>
+            <if test="username!=null">username = #{username},</if>
+            <if test="password!=null">password = #{password},</if>
+            <if test="sex!=null">sex = #{sex},</if>
+            <if test="ip!=null">ip = #{ip},</if>
+            <if test="browser!=null">browser = #{browser},</if>
+            <if test="weight!=null">weight = #{weight}</if>
+        </set>
+        WHERE
+        uid = #{uid}
+    </update>
+
+    <update id="userLoginUpdate">
+        UPDATE
+        <include refid="table"/>
+        SET
+        ip = #{ip},browser = #{browser}
+        WHERE
+        uid = #{uid}
+    </update>
+
+    <delete id="userDelete" parameterType="tw.tony.com.model.User">
+        DELETE FROM
+        <include refid="table"/>
+        WHERE
+        uid = #{uid}
+    </delete>
+
+    <select id="getUserListByAdmin" resultType="tw.tony.com.model.User">
+        SELECT
+        *
+        FROM
+        <include refid="table"/>
+    </select>
+
+    <select id="getUserByAdmin" resultType="tw.tony.com.model.User">
+        SELECT
+        *
+        FROM
+        <include refid="table"/>
+        WHERE
+        sid = #{sid}
+    </select>
+</mapper>
